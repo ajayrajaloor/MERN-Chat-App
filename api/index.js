@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const UserModel = require("./models/userModel");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
+const ws = require("ws")
 
 dotenv.config();
 mongoose.connect(process.env.MONGO_URL, {
@@ -88,6 +89,35 @@ app.post("/register", async (req, res) => {
   }
 });
 
-app.listen(4000, () => {
-  console.log("server running on port 4000");
-});
+const server = app.listen(4000);
+
+// ws = web-socket
+// wss = web-socket-server
+const wss = new ws.WebSocketServer({server})
+wss.on('connection',(connection,req) =>{
+  console.log(req.headers);
+  const cookies = req.headers.cookie;
+  if(cookies){
+    const tokenCookieString = cookies.split(';').find(str => str.startsWith('token='))
+    if(tokenCookieString){
+      const token = tokenCookieString.split('=')[1]
+      if(token){
+        jwt.verify(token,jwtSecret,{},(err,userData)=>{
+          if(err) throw err;
+           const {userId,username} = userData;
+           connection.userId = userId
+           connection.username = username
+        })
+      }
+    }
+  }
+
+  // grab all users and see who is online and send to all other clients
+
+  [...wss.clients].forEach(client =>{ // get clients as array
+    client.send(JSON.stringify({ //send information that who is in online
+      online : [...wss.clients].map(c => ({userId : c.userId,username : c.username}))
+    }))
+  })
+  
+})
