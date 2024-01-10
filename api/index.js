@@ -55,7 +55,7 @@ app.post("/login", async (req, res) => {
   if(foundUser){
     const passOk = bcrypt.compareSync(password,foundUser.password)
     if(passOk){
-        jwt.sign({usreId:foundUser._id,username},jwtSecret,{},(err,token)=>{
+        jwt.sign({userId:foundUser._id,username},jwtSecret,{},(err,token)=>{
             res.cookie('token',token,{sameSite:'none', secure : true}).json({
                 id:foundUser._id
             })
@@ -96,6 +96,8 @@ const server = app.listen(4000);
 const wss = new ws.WebSocketServer({server})
 wss.on('connection',(connection,req) =>{
   console.log(req.headers);
+
+  //read username and id from the cookie for this connection
   const cookies = req.headers.cookie;
   if(cookies){
     const tokenCookieString = cookies.split(';').find(str => str.startsWith('token='))
@@ -112,12 +114,26 @@ wss.on('connection',(connection,req) =>{
     }
   }
 
+
+  //notify everyone about online people (when someone connects)
   // grab all users and see who is online and send to all other clients
 
   [...wss.clients].forEach(client =>{ // get clients as array
     client.send(JSON.stringify({ //send information that who is in online
       online : [...wss.clients].map(c => ({userId : c.userId,username : c.username}))
     }))
+  }) 
+
+  connection.on('message', (message,isBinary) =>{
+ const messageData = JSON.parse( message.toString())
+  //  console.log(messageData,'message');
+  const {recipient,text} = messageData
+  if(recipient && text){
+    [...wss.clients].filter(c => c.userId === recipient)
+    .forEach(c => c.send(JSON.stringify({text})))
+  }
   })
+  
+// console.log([...wss.clients].map(c => c.username));
   
 })
