@@ -2,12 +2,14 @@ import { useContext, useEffect, useState } from "react";
 import Avatar from "./Avatar";
 import Logo from "./Logo";
 import { UserContext } from "./userContext";
+import {uniqBy} from 'Lodash'
 
 export default function Chat() {
   const [ws, setWs] = useState(null);
   const [onlinePeople, setOnlinePeople] = useState({});
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [newMessageText, setNewMessageText] = useState("");
+  const [messages,setMessages] = useState([])
 
   const { username, id } = useContext(UserContext);
 
@@ -29,8 +31,8 @@ export default function Chat() {
     const messageData = JSON.parse(ev.data);
     if ("online" in messageData) {
       showOnlinePeople(messageData.online);
-    }else{
-      console.log({messageData});
+    }else if ('text' in messageData){
+      setMessages(prev => ([...prev,{...messageData}]))
     }
   }
 
@@ -42,12 +44,15 @@ export default function Chat() {
           text: newMessageText,
       })
     );
+    setNewMessageText("")
+    setMessages(prev => ([...prev, {text:newMessageText, sender : id, recipient : selectedUserId}]))
   }
 
 
   const onlinePeopleExclUser = { ...onlinePeople };
   delete onlinePeopleExclUser[id];
   
+  const messagesWithoutDupes = uniqBy(messages, 'id')
 
   return (
     <div className="flex h-screen">
@@ -78,6 +83,18 @@ export default function Chat() {
           {!selectedUserId && (
             <div className="flex h-full items-center justify-center">
               <div className="text-gray-300">&larr; Select a person from the sidebar</div>
+            </div>
+          )}
+
+          {!!selectedUserId && (
+            <div>
+              {messagesWithoutDupes.map(message=>(
+                <div>
+                  sender : {message.sender} <br />
+                  my id : {id} <br />
+                  {message.text}
+                  </div>
+              ))}
             </div>
           )}
         </div>
