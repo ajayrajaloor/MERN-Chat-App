@@ -4,31 +4,33 @@ import Logo from "./Logo";
 import { UserContext } from "./userContext";
 import { uniqBy } from "Lodash";
 import axios from "axios";
+import Contact from "../Contact";
 
 export default function Chat() {
   const [ws, setWs] = useState(null);
   const [onlinePeople, setOnlinePeople] = useState({});
+  const [offlinePeople, setOfflinePeople] = useState({});
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [newMessageText, setNewMessageText] = useState("");
   const [messages, setMessages] = useState([]);
 
   const { username, id } = useContext(UserContext);
-  const divUnderMessages = useRef()
+  const divUnderMessages = useRef();
 
   useEffect(() => {
-    connectToWs ()
+    connectToWs();
   }, []);
 
-  function connectToWs (){
+  function connectToWs() {
     const ws = new WebSocket("ws://localhost:4000");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
-    ws.addEventListener("close",()=>{
-      setTimeout(()=>{  
-        console.log('Disconnected... Trying to connect...');
-        connectToWs ()
-      },1000)
-    })
+    ws.addEventListener("close", () => {
+      setTimeout(() => {
+        console.log("Disconnected... Trying to connect...");
+        connectToWs();
+      }, 1000);
+    });
   }
 
   function showOnlinePeople(peopleArray) {
@@ -68,20 +70,33 @@ export default function Chat() {
     ]);
   }
 
-  useEffect(() =>{
-    const div = divUnderMessages.current
-    if(div){
-      div.scrollIntoView({behavior:'smooth', block:'end'})
+  useEffect(() => {
+    const div = divUnderMessages.current;
+    if (div) {
+      div.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  },[messages])
+  }, [messages]);
 
-  useEffect(() =>{
-    if(selectedUserId){
-      axios.get("/messages/"+selectedUserId).then((res)=>{
-        setMessages(res.data)
-      })
+  useEffect(() => {
+    axios.get("/people").then((res) => {
+      const offlinePeopleArr = res.data
+        .filter((p) => p._id !== id)
+        .filter((p) => !Object.keys(onlinePeople).includes(p._id));
+      const offlinePeople = {};
+      offlinePeopleArr.forEach((p) => {
+        offlinePeople[p._id] = p;
+      });
+      setOfflinePeople(offlinePeople)
+    });
+  }, [onlinePeople]);
+
+  useEffect(() => {
+    if (selectedUserId) {
+      axios.get("/messages/" + selectedUserId).then((res) => {
+        setMessages(res.data);
+      });
     }
-  },[selectedUserId])
+  }, [selectedUserId]);
 
   const onlinePeopleExclUser = { ...onlinePeople };
   delete onlinePeopleExclUser[id];
@@ -93,22 +108,24 @@ export default function Chat() {
       <div className="bg-white w-1/3 ">
         <Logo />
         {Object.keys(onlinePeopleExclUser).map((userId) => (
-          <div
-            key={userId}
-            onClick={() => setSelectedUserId(userId)}
-            className={
-              "border-b border-gray-100  flex items-center gap-2 cursor-pointer " +
-              (userId === selectedUserId ? "bg-blue-50" : "")
-            }
-          >
-            {userId === selectedUserId && (
-              <div className="w-1 bg-blue-500 h-12"></div>
-            )}
-            <div className="flex pl-2 gap-2 py-2 pt-3 items-center ">
-              <Avatar username={onlinePeople[userId]} userId={userId} />
-              <span className="text-gray-800">{onlinePeople[userId]}</span>
-            </div>
-          </div>
+         <Contact
+         key={userId}
+          id={userId} 
+          online={true}
+          username={onlinePeopleExclUser[userId]}
+          onClick={()=>setSelectedUserId(userId)}
+          selected = {userId === selectedUserId}
+          />
+        ))}
+        {Object.keys(offlinePeople).map((userId) => (
+         <Contact
+         key={userId}
+          id={userId} 
+          online={false}
+          username={offlinePeople[userId].username}
+          onClick={()=>setSelectedUserId(userId)}
+          selected = {userId === selectedUserId}
+          />
         ))}
       </div>
 
@@ -127,7 +144,7 @@ export default function Chat() {
               <div className="overflow-y-scroll absolute top-0 left-0 right-0 bottom-2">
                 {messagesWithoutDupes.map((message) => (
                   <div
-                  key={message._id}
+                    key={message._id}
                     className={
                       message.sender === id ? "text-right" : "text-left"
                     }
