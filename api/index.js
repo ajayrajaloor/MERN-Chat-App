@@ -50,6 +50,7 @@ async function getUserDataFromRequest(req) {
 }
 
 
+
 app.get("/test", (req, res) => {
   res.json("test ok");
 });
@@ -61,7 +62,7 @@ app.get("/messages/:userId", async (req,res) =>{
  const messages = await MessageModel.find({
     sender:{$in:[userId,ourUserId]},
     recipient:{$in:[userId,ourUserId]}
-  }).sort({createdAt:-1})
+  }).sort({createdAt: 1})
   res.json(messages)
 })
 
@@ -185,7 +186,7 @@ wss.on("connection", (connection, req) => {
              text,
               sender: connection.userId,
               recipient,
-              id:messageDoc._id 
+              _id:messageDoc._id 
             }))
         );
     }
