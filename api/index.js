@@ -139,7 +139,37 @@ const server = app.listen(4000);
 // wss = web-socket-server
 const wss = new ws.WebSocketServer({ server });
 wss.on("connection", (connection, req) => {
-  console.log(req.headers);
+  // console.log(req.headers);
+
+  function notifyAboutOnlinePeople() {
+    [...wss.clients].forEach((client) => {
+      // get clients as array
+      client.send(
+        JSON.stringify({
+          //send information that who is in online
+          online: [...wss.clients].map((c) => ({
+            userId: c.userId,
+            username: c.username,
+          })),
+        })
+      );
+    });
+  }
+
+  connection.isAlive = true
+
+ connection.timer = setInterval(() => {
+    connection.ping()
+    connection.deathTimer = setTimeout(()=>{
+      connection.isAlive = false
+      connection.terminate()
+      notifyAboutOnlinePeople()
+    },1000)
+  },5000)
+
+  connection.on('pong',() =>{
+    clearTimeout(connection.deathTimer)
+  })
 
   //read username and id from the cookie for this connection
   const cookies = req.headers.cookie;
@@ -163,18 +193,7 @@ wss.on("connection", (connection, req) => {
   //notify everyone about online people (when someone connects)
   // grab all users and see who is online and send to all other clients
 
-  [...wss.clients].forEach((client) => {
-    // get clients as array
-    client.send(
-      JSON.stringify({
-        //send information that who is in online
-        online: [...wss.clients].map((c) => ({
-          userId: c.userId,
-          username: c.username,
-        })),
-      })
-    );
-  });
+  notifyAboutOnlinePeople()
 
   connection.on("message", async (message, isBinary) => {
     const messageData = JSON.parse(message.toString());

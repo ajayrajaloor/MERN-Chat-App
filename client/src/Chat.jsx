@@ -4,7 +4,7 @@ import Logo from "./Logo";
 import { UserContext } from "./userContext";
 import { uniqBy } from "Lodash";
 import axios from "axios";
-import Contact from "../Contact";
+import Contact from "./Contact";
 
 export default function Chat() {
   const [ws, setWs] = useState(null);

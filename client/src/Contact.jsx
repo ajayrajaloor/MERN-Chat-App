@@ -1,5 +1,5 @@
 import React from 'react'
-import Avatar from './src/Avatar'
+import Avatar from './Avatar'
 
 const Contact = ({id,username,onClick,selected,online}) => {
   return (
@@ -7,7 +7,7 @@ const Contact = ({id,username,onClick,selected,online}) => {
     key={id}
     onClick={() => onClick(id)}
     className={
-      "border-b border-gray-100  flex items-center gap-2 cursor-pointer " +
+      "border-b border-gray-100  flex items-center gap-2 cursor-pointer" +
       (selected ? "bg-blue-50" : "")
     }
   >
