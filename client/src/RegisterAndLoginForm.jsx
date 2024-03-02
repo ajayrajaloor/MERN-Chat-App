@@ -5,6 +5,7 @@ import { UserContext } from "./userContext";
 function RegisterAndLoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isLoginOrRegister, setIsLoginOrRegister] = useState("register");
 
   const { setUsername: setLoggedInUsername, setId } = useContext(UserContext);
@@ -12,13 +13,23 @@ function RegisterAndLoginForm() {
   async function handleSubmit(e) {
     e.preventDefault();
     const url = isLoginOrRegister === 'register' ? 'register' : 'login'
-    const { data } = await axios.post(url, { username, password });
-    setLoggedInUsername(username);
-    setId(data.id);
+    try {
+      const { data } = await axios.post(url, { username, password });
+      setLoggedInUsername(username);
+      setId(data.id);
+    } catch (err) {
+      console.log(err);
+      if (err.response && err.response.status === 409) {
+        setError("Username already in use. Please login.");
+      } else {
+        setError("An error occurred. Please try again later.");
+      }
+    }
   }
   return (
     <div className="bg-blue-50 h-screen flex items-center">
       <form className="w-64 mx-auto mb-12" onSubmit={handleSubmit}>
+      {error && <div className="text-red-500 mb-2">{error}</div>}
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value)}
