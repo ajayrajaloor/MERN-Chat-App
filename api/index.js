@@ -105,6 +105,12 @@ app.post("/login", async (req, res) => {
   }
 });
 
+
+app.post('/logout', (req,res) =>{
+  res.cookie("token", '', { sameSite: "none", secure: true }).json('ok')
+})
+
+
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -162,6 +168,7 @@ wss.on("connection", (connection, req) => {
     connection.ping()
     connection.deathTimer = setTimeout(()=>{
       connection.isAlive = false
+      clearInterval(connection.timer)
       connection.terminate()
       notifyAboutOnlinePeople()
     },1000)
