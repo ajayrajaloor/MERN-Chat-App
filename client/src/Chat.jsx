@@ -46,15 +46,17 @@ export default function Chat() {
     if ("online" in messageData) {
       showOnlinePeople(messageData.online);
     } else if ("text" in messageData) {
-      if(messageData.sender === selectedUserId){
+      // if (messageData.sender === selectedUserId) {
+      //   setMessages((prev) => [...prev, { ...messageData }]);
+      // }
+      if (messageData.recipient === id || messageData.sender === id) {
         setMessages((prev) => [...prev, { ...messageData }]);
       }
-     
     }
   }
 
   function logout() {
-    axios.post("/logout").then(() => {
+    axios.post("/logout").then((res) => {
       setWs(null);
       setId(null);
       setUsername(null);
@@ -81,7 +83,9 @@ export default function Chat() {
       },
     ]);
     if (file) {
+      console.log('fileeeee');
       axios.get("/messages/" + selectedUserId).then((res) => {
+        console.log(res.data,'dataaaaa');
         setMessages(res.data);
       });
     }
@@ -131,21 +135,25 @@ export default function Chat() {
 
   const messagesWithoutDupes = uniqBy(messages, "_id");
 
+
   return (
     <div className="flex h-screen">
       <div className="bg-white w-1/3 flex flex-col">
         <div className="flex-grow">
           <Logo />
-          {Object.keys(onlinePeopleExclUser).map((userId) => (
-            <Contact
-              key={userId}
-              id={userId}
-              online={true}
-              username={onlinePeopleExclUser[userId]}
-              onClick={() => setSelectedUserId(userId)}
-              selected={userId === selectedUserId}
-            />
-          ))}
+             {Object.entries(onlinePeopleExclUser)
+            .filter(([userId, username]) => username !== undefined)
+            .map(([userId, username]) => (
+              <Contact
+                key={userId}
+                id={userId}
+                online={true}
+                username={username}
+                onClick={() => setSelectedUserId(userId)}
+                selected={userId === selectedUserId}
+              />
+            ))}
+
           {Object.keys(offlinePeople).map((userId) => (
             <Contact
               key={userId}
@@ -215,9 +223,9 @@ export default function Chat() {
                       {message.file && (
                         <div>
                           <a
-                          target="_blank"
+                            target="_blank"
                             className="flex items-center gap-1 border-b"
-                            href={axios.defaults.baseURL + "/uploads/" + message.file}
+                            href={ axios.defaults.baseURL + "/uploads/" + message.file }
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"

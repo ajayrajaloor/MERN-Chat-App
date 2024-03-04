@@ -43,6 +43,7 @@ async function getUserDataFromRequest(req) {
   if (token) {
     jwt.verify(token, jwtSecret, {}, (err, userData) => {
       if (err) throw err;
+
       resolve(userData)
     });
   }else{
@@ -108,9 +109,32 @@ app.post("/login", async (req, res) => {
 });
 
 
-app.post('/logout', (req,res) =>{
-  res.cookie("token", '', { sameSite: "none", secure: true }).json('ok')
-})
+app.post("/logout", async (req, res) => {
+  const userData = await getUserDataFromRequest(req);
+  console.log(userData);
+  const userId = userData.userId;
+  console.log({userId});
+
+  [...wss.clients].forEach((client) => {
+    
+    if (client.userId === userId) {
+      clearInterval(client.timer);
+      client.terminate();
+    }
+    client.send(
+      JSON.stringify({
+        online: [...wss.clients].map((c) => ({
+          userId: c.userId,
+          username: c.username,
+        })),
+      })
+    );
+  });
+  
+
+  res.cookie("token", "", { sameSite: "none", secure: true }).json("ok");
+});
+
 
 
 app.post("/register", async (req, res) => {
@@ -151,11 +175,27 @@ const server = app.listen(4000);
 
 // ws = web-socket
 // wss = web-socket-server
+
 const wss = new ws.WebSocketServer({ server });
 wss.on("connection", (connection, req) => {
   // console.log(req.headers);
 
   function notifyAboutOnlinePeople() {
+    // const onlineUserIds = [...wss.clients].map((c) => c.userId);
+    // const onlineUsernames = [...wss.clients].map((c) => c.username);
+
+    // // Send information about online users to all clients
+    // [...wss.clients].forEach((client) => {
+    //   client.send(
+    //     JSON.stringify({
+    //       online: onlineUserIds.map((userId, index) => ({
+    //         userId,
+    //         username: onlineUsernames[index],
+    //       })),
+    //     })
+    //   );
+    // });
+
     [...wss.clients].forEach((client) => {
       // get clients as array
       client.send(
