@@ -111,9 +111,7 @@ app.post("/login", async (req, res) => {
 
 app.post("/logout", async (req, res) => {
   const userData = await getUserDataFromRequest(req);
-  console.log(userData);
   const userId = userData.userId;
-  console.log({userId});
 
   [...wss.clients].forEach((client) => {
     
@@ -253,14 +251,12 @@ wss.on("connection", (connection, req) => {
   connection.on("message", async (message, isBinary) => {
     const messageData = JSON.parse(message.toString());
     //  console.log(messageData,'message');
-    const { recipient, text ,file} = messageData;
+    const { recipient, text ,file,fileData} = messageData;
     let filename = null
     if (file) {
-      const parts =file.name.split('.')
-      const ext = parts[parts.length-1]
-     filename = Date.now() + '.'+ext
+     filename = file
       const path = __dirname + '/uploads/' + filename
-      const bufferData = new Buffer(file.data.split(',')[1], 'base64')
+      const bufferData = new Buffer(fileData.split(',')[1], 'base64')
       fs.writeFile(path,bufferData,()=>{
         console.log('file saved' + path);
       })
@@ -270,7 +266,7 @@ wss.on("connection", (connection, req) => {
         sender: connection.userId,
         recipient,
         text,
-        file: file ? filename : null
+        file: filename 
       });
       [...wss.clients]
         .filter((c) => c.userId === recipient)
@@ -279,7 +275,7 @@ wss.on("connection", (connection, req) => {
              text,
               sender: connection.userId,
               recipient,
-              file: file ? filename : null,
+              file:  filename, 
               _id:messageDoc._id 
             }))
         );

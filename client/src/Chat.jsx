@@ -65,11 +65,18 @@ export default function Chat() {
 
   function sendMessage(ev, file = null) {
     if (ev) ev.preventDefault();
+    let filename;
+    if(file){
+      const parts =file.name.split('.')
+      const ext = parts[parts.length-1]
+     filename = Date.now() + '.'+ext
+    }
     ws.send(
       JSON.stringify({
         recipient: selectedUserId,
         text: newMessageText,
-        file,
+        file: file?filename:'',
+        fileData:file?.data
       })
     );
     setNewMessageText("");
@@ -80,15 +87,16 @@ export default function Chat() {
         sender: id,
         recipient: selectedUserId,
         _id: Date.now(),
+        file:file?filename:''
       },
     ]);
-    if (file) {
-      console.log('fileeeee');
-      axios.get("/messages/" + selectedUserId).then((res) => {
-        console.log(res.data,'dataaaaa');
-        setMessages(res.data);
-      });
-    }
+    // if (file) {
+    //   console.log('fileeeee');
+    //   axios.get("/messages/" + selectedUserId).then((res) => {
+    //     console.log(res.data,'dataaaaa');
+    //     setMessages(res.data);
+    //   });
+    // }
   }
 
   function sendFile(ev) {
